@@ -2,18 +2,15 @@ import 'package:get/get.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:google_mlkit_text_recognition/google_mlkit_text_recognition.dart';
 
-// Import the new WeatherService
-import '../../services/weather_service.dart';
+import '../../services/weather_service.dart'; // Import WeatherService
 import '../result/result_screen.dart';
 
 class HomeController extends GetxController {
   final ImagePicker _picker = ImagePicker();
   final TextRecognizer _textRecognizer = TextRecognizer(script: TextRecognitionScript.latin);
-  
-  // Instantiate WeatherService
-  // The API key is now managed by the WeatherService
-  final WeatherService _weatherService = WeatherService(apiKey: '90015d5b8676feecdc7641bd4a5af88f');
-  final String _cityId = '1185241'; // Dhaka
+
+  // Get WeatherService instance from GetX bindings
+  final WeatherService _weatherService = Get.find<WeatherService>();
 
   var selectedImagePath = ''.obs;
   var extractedText = ''.obs;
@@ -23,9 +20,12 @@ class HomeController extends GetxController {
   var apiResult = ''.obs;
   var comparisonMessage = ''.obs;
 
-  // Constructor no longer needs to initialize _apiUrl
+  // API key and City ID are no longer needed here,
+  // as they are passed to WeatherService in HomeBinding.
+
+  // Constructor is now simpler
   HomeController() {
-    // Initialization for _apiUrl removed
+    // Initialization for _weatherService via Get.find() is already done above.
   }
 
   @override
@@ -85,7 +85,12 @@ class HomeController extends GetxController {
   }
 
   double? _parseTemperatureFromText(String text) {
-    final RegExp tempRegExp = RegExp(r'(\d+\.?\d*)\s?°?C', caseSensitive: false);
+    //final RegExp tempRegExp = RegExp(r'(\d+\.?\d*)\s?°?c', caseSensitive: false);
+    final RegExp tempRegExp = RegExp(
+      r'([-+]?\d+(?:\.\d+)?)\s*°?\s*(?:[Cc]|celsius|celcius|Celsius|Celcius)',
+      caseSensitive: false,
+    );
+
     final RegExpMatch? match = tempRegExp.firstMatch(text);
     if (match != null && match.group(1) != null) {
       return double.tryParse(match.group(1)!);
@@ -113,8 +118,8 @@ class HomeController extends GetxController {
     comparisonMessage.value = '';
 
     try {
-      // Use WeatherService to get temperature
-      final Map<String, dynamic> weatherData = await _weatherService.getCurrentTemperature(_cityId);
+      // Use WeatherService to get temperature; no need to pass cityId
+      final Map<String, dynamic> weatherData = await _weatherService.getCurrentTemperature();
       final double? apiTemp = weatherData['temperature'] as double?;
       final String cityName = weatherData['cityName'] as String? ?? 'your city';
 
@@ -122,12 +127,11 @@ class HomeController extends GetxController {
         apiResult.value = 'Current temperature in $cityName: ${apiTemp.toStringAsFixed(1)}°C.';
         double difference = (imageTemp - apiTemp).abs();
         if (difference < 0.5) { // Threshold for "match"
-          comparisonMessage.value = 'Temperatures match! (Image: ${imageTemp.toStringAsFixed(1)}°C, API: ${apiTemp.toStringAsFixed(1)}°C)';
+          comparisonMessage.value = 'Temperatures match!\n(Image: ${imageTemp.toStringAsFixed(1)}°C, API: ${apiTemp.toStringAsFixed(1)}°C)';
         } else {
-          comparisonMessage.value = 'Temperatures differ. Image: ${imageTemp.toStringAsFixed(1)}°C, API: ${apiTemp.toStringAsFixed(1)}°C. Difference: ${difference.toStringAsFixed(1)}°C.';
+          comparisonMessage.value = 'Temperatures differ.\nImage: ${imageTemp.toStringAsFixed(1)}°C, API: ${apiTemp.toStringAsFixed(1)}°C.\nDifference: ${difference.toStringAsFixed(1)}°C.';
         }
       } else {
-        // This case should ideally be covered by exceptions from WeatherService
         throw Exception('Temperature data is not in the expected format or missing in API response.');
       }
     } catch (e) {
