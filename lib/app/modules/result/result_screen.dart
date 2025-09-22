@@ -43,21 +43,25 @@ class ResultScreen extends StatelessWidget {
               ),
               const SizedBox(height: 30),
               ElevatedButton(
-                onPressed: extractedText.isEmpty
-                    ? null // Disable button if no text
+                onPressed: (extractedText.isEmpty || controller.isCallingApi.value) // Disable if no text OR if API call is in progress
+                    ? null 
                     : () {
-                  controller.compareWithApi(extractedText);
-                },
-                child: Obx(() => controller.isLoading.value // Use isLoading from HomeController for feedback
+                        controller.compareWithApi(extractedText);
+                      },
+                child: Obx(() => controller.isCallingApi.value // Use isCallingApi for feedback
                     ? const SizedBox(
-                  height: 20,
-                  width: 20,
-                  child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
-                )
+                        height: 20,
+                        width: 20,
+                        child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
+                      )
                     : const Text('Compare with API')),
               ),
               const SizedBox(height: 20),
               Obx(() {
+                // Also, ensure API results are only shown if not loading
+                if (controller.isCallingApi.value) {
+                  return const SizedBox.shrink(); // Don't show old results while new ones are loading
+                }
                 if (controller.apiResult.value.isEmpty && controller.comparisonMessage.value.isEmpty) {
                   return const SizedBox.shrink(); // Don't show if no API results yet
                 }
