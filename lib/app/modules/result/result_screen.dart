@@ -31,7 +31,7 @@ class ResultScreen extends GetView<ResultController> { // Changed to GetView<Res
         title: Row(
           children: [
             Image.asset(
-              'assets/logo/app_logo.png',
+              'assets/logo/applogo.png',
               height: 30,
             ),
             const SizedBox(width: 8),
@@ -83,26 +83,67 @@ class ResultScreen extends GetView<ResultController> { // Changed to GetView<Res
             const SizedBox(height: 24),
 
             // --- Compare Button ---
-            // Obx is needed here if the button's enabled state depends on ocrText from ResultController (it's a getter to RxString in HomeController)
-            Obx(() => ElevatedButton( // Wrap with Obx if controller.ocrText is an RxString in ResultController (it's a getter to RxString in HomeController)
-              style: ElevatedButton.styleFrom(
-                padding: const EdgeInsets.symmetric(vertical: 16.0),
-                textStyle: theme.textTheme.titleMedium,
-              ),
-              // Use controller.ocrText and controller.isCallingApi
-              onPressed: (controller.ocrText.isEmpty || controller.ocrText.startsWith("No text found") || controller.isCallingApi.value)
-                  ? null
-                  : () {
-                      controller.performApiComparison(); // Call method on ResultController
-                    },
-              child: Obx(() => controller.isCallingApi.value // isCallingApi is an RxBool from ResultController
-                  ? const SizedBox(
-                      height: 24,
-                      width: 24,
-                      child: CircularProgressIndicator(strokeWidth: 3, color: Colors.white),
-                    )
-                  : const Text('Compare with API')),
-            )),
+            Obx(() {
+              final bool isEffectivelyDisabled = controller.ocrText.isEmpty ||
+                                               controller.ocrText.startsWith("No text found") ||
+                                               controller.isCallingApi.value;
+              final bool isLoading = controller.isCallingApi.value;
+
+              return ElevatedButton(
+                style: ElevatedButton.styleFrom(
+                  padding: EdgeInsets.zero, // ElevatedButton itself has no padding
+                  backgroundColor: Colors.transparent, // Transparent to show Ink's gradient
+                  shadowColor: Colors.black45, // No default shadow
+                  elevation: 2, // No elevation shadow
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(30.0)), // Rounded shape for the button
+                ),
+                onPressed: isEffectivelyDisabled ? null : () {
+                  controller.performApiComparison(); // Call method on ResultController
+                },
+                child: Ink(
+                  decoration: BoxDecoration(
+                    gradient: isEffectivelyDisabled && !isLoading // Apply disabled gradient only if not loading
+                        ? LinearGradient( // Disabled gradient
+                            colors: [Colors.grey.shade400, Colors.grey.shade600],
+                            begin: Alignment.centerLeft,
+                            end: Alignment.centerRight,
+                          )
+                        : const LinearGradient( // Active or Loading gradient
+                            colors: [Color(0xFF3A7BD5), Color(0xFF00D2FF)], // Blue to Cyan gradient
+                            begin: Alignment.centerLeft,
+                            end: Alignment.centerRight,
+                          ),
+                    borderRadius: BorderRadius.circular(30.0), // Match button shape
+                  ),
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(vertical: 16.0, horizontal: 24.0), // Internal padding for content
+                    constraints: const BoxConstraints(minHeight: 50), // Ensure consistent button height
+                    alignment: Alignment.center,
+                    child: isLoading
+                        ? const SizedBox(
+                            height: 24,
+                            width: 24,
+                            child: CircularProgressIndicator(strokeWidth: 3, valueColor: AlwaysStoppedAnimation<Color>(Colors.white)),
+                          )
+                        : Row(
+                            mainAxisSize: MainAxisSize.min, // Row takes minimum space needed by children
+                            mainAxisAlignment: MainAxisAlignment.center, // Center content horizontally
+                            children: [
+                              Text(
+                                'Compare with API',
+                                style: theme.textTheme.titleMedium?.copyWith(
+                                  color: Colors.white,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                              const SizedBox(width: 10),
+                              const Icon(Icons.arrow_forward_ios_rounded, color: Colors.white, size: 18),
+                            ],
+                          ),
+                  ),
+                ),
+              );
+            }),
 
             const SizedBox(height: 24),
 

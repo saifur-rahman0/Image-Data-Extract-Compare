@@ -136,6 +136,7 @@ class HomeController extends GetxController {
       colorText: Colors.green[700],
       margin: const EdgeInsets.all(10),
       borderRadius: 8,
+      duration: const Duration(seconds: 1),
     );
 
     try {

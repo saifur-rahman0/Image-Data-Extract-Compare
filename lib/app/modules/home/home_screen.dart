@@ -12,7 +12,7 @@ class HomeScreen extends GetView<HomeController> {
         title: Row( // New title with logo
           children: [
             Image.asset(
-              'assets/logo/app_logo.png',
+              'assets/logo/applogo.png',
               height: 30, // Adjust height as needed
               // width: 30, // Optionally set width
             ),
@@ -27,16 +27,18 @@ class HomeScreen extends GetView<HomeController> {
       body: Container( // Wrap with Container for background image
         decoration: const BoxDecoration(
           image: DecorationImage(
-            image: AssetImage('assets/background/bg.jpg'), // Your image path
+            image: AssetImage('assets/background/bg2.jpg'), // Your image path
             fit: BoxFit.cover, // Changed back to BoxFit.cover
           ),
         ),
-        child: Center(
+        child: Align( // Changed from Center to Align
+          alignment: Alignment.center, // Aligns child to the bottom center
           child: Padding(
-            padding: const EdgeInsets.all(16.0),
+            // Adjusted padding to give more space at the bottom
+            padding: const EdgeInsets.only(left: 16.0, right: 16.0, top: 16.0, bottom: 48.0),
             child: Obx(() {
               return Column(
-                mainAxisAlignment: MainAxisAlignment.center,
+                mainAxisSize: MainAxisSize.min, // Changed from MainAxisAlignment.center
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: <Widget>[
                   ElevatedButton(
@@ -68,9 +70,12 @@ class HomeScreen extends GetView<HomeController> {
                           },
                     child: const Text('Take Photo'),
                   ),
-                  const SizedBox(height: 30),
+                  // Keep the progress indicator logic if it should also be at the bottom
                   if (controller.isProcessingImage.value)
-                    const Center(child: CircularProgressIndicator(color: Colors.white)), // White indicator
+                    const Padding(
+                      padding: EdgeInsets.only(top: 30.0),
+                      child: Center(child: CircularProgressIndicator(color: Colors.white)), // White indicator
+                    ),
                 ],
               );
             }),
