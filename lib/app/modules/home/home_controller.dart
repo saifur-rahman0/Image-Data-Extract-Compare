@@ -1,29 +1,27 @@
-import 'package:flutter/material.dart'; // Added for Colors
+import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:google_mlkit_text_recognition/google_mlkit_text_recognition.dart';
 
-import '../../services/weather_service.dart';
-import '../../routes/app_routes.dart'; // Added for named navigation
+// Updated controller imports
+import '../controllers/temperature_controller.dart';
+import '../controllers/product_controller.dart';
+import '../../routes/app_routes.dart'; // Keep for navigation
 
 class HomeController extends GetxController {
   final ImagePicker _picker = ImagePicker();
   final TextRecognizer _textRecognizer = TextRecognizer(script: TextRecognitionScript.latin);
-  final WeatherService _weatherService = Get.find<WeatherService>();
 
+  // Instances of the new controllers
+  final TemperatureController _temperatureController = Get.find<TemperatureController>();
+  final ProductController _productController = Get.find<ProductController>();
+
+  // Rx variables that remain in HomeController
   var selectedImagePath = ''.obs;
-  var extractedText = ''.obs; // General extracted text
-  final RxString ocrTextForResultScreen = ''.obs; // Specific for ResultScreen
+  var extractedText = ''.obs; 
+  final RxString ocrTextForResultScreen = ''.obs;
   var isProcessingImage = false.obs;
-  var isCallingApi = false.obs;
-
-  // Observables for API comparison results (used by ResultScreen via ResultController)
-  final Rxn<double> imageTemperature = Rxn<double>();
-  final Rxn<double> apiTemperature = Rxn<double>();
-  final RxString apiCityName = ''.obs;
-  final RxString overallApiStatusMessage = ''.obs;
-  final RxString temperatureComparisonResult = ''.obs;
-  final RxString temperatureDifferenceDetails = ''.obs;
+  var isCallingApi = false.obs; 
 
   HomeController();
 
@@ -33,21 +31,17 @@ class HomeController extends GetxController {
     super.onClose();
   }
 
-  void _resetApiComparisonFields() {
-    imageTemperature.value = null;
-    apiTemperature.value = null;
-    apiCityName.value = '';
-    overallApiStatusMessage.value = '';
-    temperatureComparisonResult.value = '';
-    temperatureDifferenceDetails.value = '';
+  void _resetAllLogicFields() {
+    _temperatureController.resetFields();
+    _productController.resetFields();
   }
 
   Future<void> _initiateImageProcessing(ImageSource source) async {
     isProcessingImage.value = true;
     selectedImagePath.value = '';
-    extractedText.value = '';
-    ocrTextForResultScreen.value = ''; // Reset this as well
-    _resetApiComparisonFields();
+    extractedText.value = ''; 
+    ocrTextForResultScreen.value = '';
+    _resetAllLogicFields(); 
 
     try {
       final XFile? imageFile = await _picker.pickImage(source: source);
@@ -55,11 +49,11 @@ class HomeController extends GetxController {
         selectedImagePath.value = imageFile.path;
         await _extractTextAndNavigate(imageFile.path);
       } else {
-        Get.snackbar('Info', source == ImageSource.camera ? 'No photo taken.' : 'No image selected.');
+        Get.snackbar('Info', source == ImageSource.camera ? 'No photo taken.' : 'No image selected.', duration: const Duration(seconds: 1));
         isProcessingImage.value = false;
       }
     } catch (e) {
-      Get.snackbar('Error', 'Failed to ${source == ImageSource.camera ? "take photo" : "pick image"}: ${e.toString()}');
+      Get.snackbar('Error', 'Failed to ${source == ImageSource.camera ? "take photo" : "pick image"}: ${e.toString()}', duration: const Duration(seconds: 1));
       isProcessingImage.value = false;
     }
   }
@@ -78,97 +72,94 @@ class HomeController extends GetxController {
       final RecognizedText recognizedText = await _textRecognizer.processImage(inputImage);
       String text = recognizedText.text;
       if (text.isNotEmpty) {
-        extractedText.value = text; // For general purpose if any
-        ocrTextForResultScreen.value = text; // Specifically for ResultScreen
-        Get.toNamed(Routes.RESULT); // Navigate by named route
+        extractedText.value = text; 
+        ocrTextForResultScreen.value = text; 
+        Get.toNamed(Routes.RESULT);
       } else {
         extractedText.value = 'No text found in the image.';
         ocrTextForResultScreen.value = 'No text found in the image.';
-        Get.snackbar('OCR Result', 'No text found in the image.');
+        Get.snackbar('OCR Result', 'No text found in the image.', duration: const Duration(seconds: 1));
       }
     } catch (e) {
       String errorMsg = 'Failed to extract text: ${e.toString()}';
       extractedText.value = errorMsg;
       ocrTextForResultScreen.value = errorMsg;
-      Get.snackbar('Error', errorMsg);
+      Get.snackbar('Error', errorMsg, duration: const Duration(seconds: 1));
     } finally {
       isProcessingImage.value = false;
     }
   }
 
-  double? _parseTemperatureFromText(String text) {
-    final RegExp tempRegExp = RegExp(
-      r'([-+]?\d+(?:\.\d+)?)\s*°?\s*(?:[Cc]|celsius|celcius|Celsius|Celcius)',
-      caseSensitive: false,
-    );
-    final RegExpMatch? match = tempRegExp.firstMatch(text);
-    if (match != null && match.group(1) != null) {
-      return double.tryParse(match.group(1)!);
-    }
-    return null;
-  }
-
   Future<void> compareWithApi(String imageText) async {
     if (imageText.isEmpty) {
-      Get.snackbar('Info', 'No text provided for API comparison.');
+      Get.snackbar('Info', 'No text provided for API comparison.', duration: const Duration(seconds: 1));
+      _resetAllLogicFields();
+      isCallingApi.value = false; // Ensure isCallingApi is reset
       return;
     }
 
-    _resetApiComparisonFields();
+    _resetAllLogicFields();
     isCallingApi.value = true;
 
-    double? parsedImageTemp = _parseTemperatureFromText(imageText);
-    imageTemperature.value = parsedImageTemp;
+    // --- Temperature Processing ---
+    await _temperatureController.processAndCompare(imageText);
 
-    if (parsedImageTemp == null) {
-      overallApiStatusMessage.value = 'Could not find temperature in image text.';
-      temperatureDifferenceDetails.value = 'Please ensure the image contains a clear temperature reading (e.g., 25°C).';
-      Get.snackbar('OCR Info', 'No parseable temperature found in image text.', snackPosition: SnackPosition.BOTTOM);
-      isCallingApi.value = false;
-      return;
+    if (_temperatureController.temperatureFoundInImage.value) {
+       Get.snackbar(
+        'OCR Success',
+        'Temperature found: ${_temperatureController.imageTemperature.value?.toStringAsFixed(1)}°C. Comparing with API...',
+        snackPosition: SnackPosition.BOTTOM,
+        backgroundColor: Colors.lightGreen[100],
+        colorText: Colors.green[700],
+        margin: const EdgeInsets.all(10),
+        borderRadius: 8,
+        duration: const Duration(seconds: 1),
+      );
     }
-
-    Get.snackbar(
-      'OCR Success',
-      'Temperature found in image: ${parsedImageTemp.toStringAsFixed(1)}°C',
-      snackPosition: SnackPosition.BOTTOM,
-      backgroundColor: Colors.lightGreen[100],
-      colorText: Colors.green[700],
-      margin: const EdgeInsets.all(10),
-      borderRadius: 8,
-      duration: const Duration(seconds: 1),
-    );
-
+    
+    // --- Product Processing (runs unconditionally after temperature processing) ---
+    Get.snackbar('Product Search', 'Attempting to identify products in text...',
+                 snackPosition: SnackPosition.BOTTOM,
+                 duration: const Duration(seconds: 1),
+                 backgroundColor: Colors.blue[100],
+                 colorText: Colors.blue[700]);
     try {
-      final Map<String, dynamic> weatherData = await _weatherService.getCurrentTemperature();
-      final double? fetchedApiTemp = weatherData['temperature'] as double?;
-      final String fetchedCityName = weatherData['cityName'] as String? ?? 'your city';
+      await _productController.searchForProducts(imageText);
 
-      apiTemperature.value = fetchedApiTemp;
-      apiCityName.value = fetchedCityName;
-
-      if (fetchedApiTemp != null) {
-        overallApiStatusMessage.value = 'Current temperature in $fetchedCityName: ${fetchedApiTemp.toStringAsFixed(1)}°C.';
-        double difference = (parsedImageTemp - fetchedApiTemp).abs();
-
-        if (difference < 0.5) {
-          temperatureComparisonResult.value = 'Temperatures match!';
-          temperatureDifferenceDetails.value = 'Both sources confirm ${parsedImageTemp.toStringAsFixed(1)}°C.';
-        } else {
-          temperatureComparisonResult.value = 'Temperatures differ.';
-          temperatureDifferenceDetails.value = 'Difference: ${difference.toStringAsFixed(1)}°C';
-        }
-      } else {
-        overallApiStatusMessage.value = 'API Error: Could not fetch temperature data.';
-        temperatureDifferenceDetails.value = 'API response did not contain valid temperature data.';
+      if (_productController.productsWereFound.value) {
+        Get.snackbar('Product Search', 'Found products: ${_productController.identifiedProductNames.join(', ')}',
+                     snackPosition: SnackPosition.BOTTOM,
+                     backgroundColor: Colors.lightGreen[100],
+                     colorText: Colors.green[700],
+                     duration: const Duration(seconds: 1));
+      } else if (_productController.productSearchAttempted.value) {
+        Get.snackbar('Product Search', 'No specific products identified in the text.',
+                     snackPosition: SnackPosition.BOTTOM,
+                     duration: const Duration(seconds: 1));
       }
     } catch (e) {
-      overallApiStatusMessage.value = 'API Call Failed.';
-      temperatureDifferenceDetails.value = 'Error: ${e.toString()}';
-      apiTemperature.value = null;
-      Get.snackbar('API Error', 'Failed to get data from API: ${e.toString()}');
-    } finally {
-      isCallingApi.value = false;
+      Get.snackbar('Product Search Error', 'Could not identify products: ${e.toString()}',
+                   snackPosition: SnackPosition.BOTTOM,
+                   duration: const Duration(seconds: 1));
+      _productController.productSearchAttempted.value = true;
+      _productController.productsWereFound.value = false;
     }
+    
+    isCallingApi.value = false;
   }
+
+  // --- Getters to expose sub-controller fields for ResultController ---
+  Rxn<double> get imageTemperature => _temperatureController.imageTemperature;
+  Rxn<double> get apiTemperature => _temperatureController.apiTemperature;
+  RxString get apiCityName => _temperatureController.apiCityName;
+  RxString get overallTemperatureStatusMessage => _temperatureController.overallTemperatureStatusMessage;
+  RxString get temperatureComparisonResult => _temperatureController.temperatureComparisonResult;
+  RxString get temperatureDifferenceDetails => _temperatureController.temperatureDifferenceDetails;
+  RxBool get temperatureProcessingAttempted => _temperatureController.temperatureProcessingAttempted;
+  RxBool get temperatureFoundInImage => _temperatureController.temperatureFoundInImage;
+
+  RxList<String> get identifiedProductNames => _productController.identifiedProductNames;
+  RxBool get productSearchAttempted => _productController.productSearchAttempted;
+  RxBool get productsWereFound => _productController.productsWereFound;
+
 }
