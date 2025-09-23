@@ -25,7 +25,7 @@ It allows users to:
 
 ---
 
-## 🛠 Tech Stack
+##  Tech Stack
 - **Frontend:** Flutter (Dart)
 - **OCR:** Google ML Kit (on-device, free)
 - **Weather API:** [OpenWeather](https://openweathermap.org/api)
