@@ -2,41 +2,42 @@ import 'package:get/get.dart';
 import '../home/home_controller.dart'; // To access shared data and methods
 
 class ResultController extends GetxController {
-  // Dependency on HomeController, initialized in onInit
   late final HomeController _homeController;
 
-  // Getter for the extracted text to be displayed on ResultScreen
+  // Getter for the extracted text
   String get ocrText => _homeController.ocrTextForResultScreen.value;
 
-  // --- Pass-through getters for API comparison observables from HomeController ---
+  // --- Pass-through getters from HomeController ---
+
+  // Overall API call status
+  RxBool get isCallingApi => _homeController.isCallingApi;
+
+  // Temperature related fields from HomeController (which gets them from TemperatureController)
   Rxn<double> get imageTemperature => _homeController.imageTemperature;
   Rxn<double> get apiTemperature => _homeController.apiTemperature;
-  // RxString get apiCityName => _homeController.apiCityName; // Not directly used by ResultScreen UI currently
-  RxString get overallApiStatusMessage => _homeController.overallApiStatusMessage;
+  // RxString get apiCityName => _homeController.apiCityName; // Still not directly used by ResultScreen UI
+  RxString get overallTemperatureStatusMessage => _homeController.overallTemperatureStatusMessage; // Updated
   RxString get temperatureComparisonResult => _homeController.temperatureComparisonResult;
   RxString get temperatureDifferenceDetails => _homeController.temperatureDifferenceDetails;
+  RxBool get temperatureProcessingAttempted => _homeController.temperatureProcessingAttempted; // New
+  RxBool get temperatureFoundInImage => _homeController.temperatureFoundInImage; // New
 
-  // Pass-through getter for API call status
-  RxBool get isCallingApi => _homeController.isCallingApi;
+  // Product related fields from HomeController (which gets them from ProductController)
+  RxList<String> get identifiedProductNames => _homeController.identifiedProductNames;
+  RxBool get productSearchAttempted => _homeController.productSearchAttempted; // Replaces productSearchConcluded
+  RxBool get productsWereFound => _homeController.productsWereFound; // New
 
   @override
   void onInit() {
     super.onInit();
-    // Initialize HomeController instance.
-    // HomeController should already be in memory, put by its binding.
     _homeController = Get.find<HomeController>();
   }
 
   // Method to initiate the API comparison using the text from HomeController
   Future<void> performApiComparison() async {
     final textToCompare = _homeController.ocrTextForResultScreen.value;
-    if (textToCompare.isNotEmpty && !textToCompare.startsWith('No text found')) {
-      await _homeController.compareWithApi(textToCompare);
-    } else {
-      // Update status messages directly or show a snackbar
-      _homeController.overallApiStatusMessage.value = 'No valid text available for comparison.';
-      _homeController.temperatureComparisonResult.value = '';
-      _homeController.temperatureDifferenceDetails.value = 'Please go back and extract text from an image first.';
-    }
+    // HomeController's compareWithApi now handles the empty text case,
+    // including resetting fields and showing a SnackBar.
+    await _homeController.compareWithApi(textToCompare);
   }
 }
