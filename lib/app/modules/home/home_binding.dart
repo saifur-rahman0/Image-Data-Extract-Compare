@@ -1,19 +1,30 @@
 import 'package:get/get.dart';
 import 'home_controller.dart';
-import '../../services/weather_service.dart'; // Import WeatherService
+import '../../services/weather_service.dart';
+import '../../services/product_service.dart';
+// Updated controller imports
+import '../controllers/temperature_controller.dart';
+import '../controllers/product_controller.dart';
+// Import for API configuration
+import '../../core/config.dart'; // Path to your config file
 
 class HomeBinding extends Bindings {
   @override
   void dependencies() {
-    // Register WeatherService
-    // It will be created when first requested by Get.find<WeatherService>()
     Get.lazyPut<WeatherService>(() => WeatherService(
-          apiKey: '90015d5b8676feecdc7641bd4a5af88f', // Your API key
-          cityId: '1185241', // Your City ID (Dhaka)
+          apiKey: ApiConfig.openWeatherApiKey, // Use key from ApiConfig
+          cityId: '1185241',
         ));
 
-    // Register HomeController
-    // HomeController will now be able to find the WeatherService instance
+    Get.lazyPut<ProductService>(() => ProductService(
+          apiKey: ApiConfig.huggingFaceApiKey, // Use key from ApiConfig
+        ));
+
+    // Register the new controllers
+    Get.lazyPut<TemperatureController>(() => TemperatureController());
+    Get.lazyPut<ProductController>(() => ProductController());
+
+    // HomeController depends on the above controllers being registered
     Get.lazyPut<HomeController>(() => HomeController());
   }
 }
