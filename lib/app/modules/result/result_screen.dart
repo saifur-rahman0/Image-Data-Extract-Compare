@@ -1,16 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
-// Import ResultController instead of HomeController
 import 'result_controller.dart';
 
-class ResultScreen extends GetView<ResultController> { // Changed to GetView<ResultController>
-  // Removed final String extractedText;
-  const ResultScreen({super.key}); // Removed required this.extractedText
+class ResultScreen extends GetView<ResultController> {
+  const ResultScreen({super.key});
 
   @override
   Widget build(BuildContext context) {
-    // final HomeController controller = Get.find<HomeController>(); // Removed
-    // The 'controller' is now an instance of ResultController, provided by GetView
     final ThemeData theme = Theme.of(context);
 
     Widget _buildTemperatureColumn(String title, double? tempValue) {
@@ -67,7 +63,6 @@ class ResultScreen extends GetView<ResultController> { // Changed to GetView<Res
                         borderRadius: BorderRadius.circular(8.0),
                       ),
                       child: SingleChildScrollView(
-                        // Use controller.ocrText from ResultController
                         child: Text(
                           controller.ocrText.isEmpty ? "No text could be extracted." : controller.ocrText,
                           style: theme.textTheme.bodyLarge?.copyWith(height: 1.5),
@@ -91,33 +86,33 @@ class ResultScreen extends GetView<ResultController> { // Changed to GetView<Res
 
               return ElevatedButton(
                 style: ElevatedButton.styleFrom(
-                  padding: EdgeInsets.zero, // ElevatedButton itself has no padding
-                  backgroundColor: Colors.transparent, // Transparent to show Ink's gradient
-                  shadowColor: Colors.black45, // No default shadow
-                  elevation: 2, // No elevation shadow
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(30.0)), // Rounded shape for the button
+                  padding: EdgeInsets.zero,
+                  backgroundColor: Colors.transparent,
+                  shadowColor: Colors.black45,
+                  elevation: 2,
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(30.0)),
                 ),
                 onPressed: isEffectivelyDisabled ? null : () {
-                  controller.performApiComparison(); // Call method on ResultController
+                  controller.performApiComparison();
                 },
                 child: Ink(
                   decoration: BoxDecoration(
-                    gradient: isEffectivelyDisabled && !isLoading // Apply disabled gradient only if not loading
-                        ? LinearGradient( // Disabled gradient
+                    gradient: isEffectivelyDisabled && !isLoading
+                        ? LinearGradient(
                             colors: [Colors.grey.shade400, Colors.grey.shade600],
                             begin: Alignment.centerLeft,
                             end: Alignment.centerRight,
                           )
-                        : const LinearGradient( // Active or Loading gradient
-                            colors: [Color(0xFF3A7BD5), Color(0xFF00D2FF)], // Blue to Cyan gradient
+                        : const LinearGradient(
+                            colors: [Color(0xFF3A7BD5), Color(0xFF00D2FF)],
                             begin: Alignment.centerLeft,
                             end: Alignment.centerRight,
                           ),
-                    borderRadius: BorderRadius.circular(30.0), // Match button shape
+                    borderRadius: BorderRadius.circular(30.0),
                   ),
                   child: Container(
-                    padding: const EdgeInsets.symmetric(vertical: 16.0, horizontal: 24.0), // Internal padding for content
-                    constraints: const BoxConstraints(minHeight: 50), // Ensure consistent button height
+                    padding: const EdgeInsets.symmetric(vertical: 16.0, horizontal: 24.0),
+                    constraints: const BoxConstraints(minHeight: 50),
                     alignment: Alignment.center,
                     child: isLoading
                         ? const SizedBox(
@@ -126,8 +121,8 @@ class ResultScreen extends GetView<ResultController> { // Changed to GetView<Res
                             child: CircularProgressIndicator(strokeWidth: 3, valueColor: AlwaysStoppedAnimation<Color>(Colors.white)),
                           )
                         : Row(
-                            mainAxisSize: MainAxisSize.min, // Row takes minimum space needed by children
-                            mainAxisAlignment: MainAxisAlignment.center, // Center content horizontally
+                            mainAxisSize: MainAxisSize.min,
+                            mainAxisAlignment: MainAxisAlignment.center,
                             children: [
                               Text(
                                 'Compare with API',
@@ -151,21 +146,22 @@ class ResultScreen extends GetView<ResultController> { // Changed to GetView<Res
             Obx(() {
               Widget cardContent;
 
-              if (controller.isCallingApi.value) {
+              if (!controller.isCallingApi.value && !controller.temperatureProcessingAttempted.value) {
+                cardContent = const SizedBox.shrink(key: ValueKey('apiCardInitialHidden'));
+              } else if (controller.isCallingApi.value && !controller.temperatureProcessingAttempted.value) {
                 cardContent = const Center(
-                  key: ValueKey('apiLoading'), // Key for AnimatedSwitcher
+                  key: ValueKey('apiLoading'),
                   child: Padding(
                     padding: EdgeInsets.symmetric(vertical: 20.0),
                     child: Text("Fetching API data...", style: TextStyle(fontStyle: FontStyle.italic)),
                   ),
                 );
-              } else if (controller.overallApiStatusMessage.value.isEmpty &&
-                         controller.temperatureComparisonResult.value.isEmpty &&
-                         controller.temperatureDifferenceDetails.value.isEmpty &&
-                         controller.imageTemperature.value == null) {
-                cardContent = const SizedBox.shrink(key: ValueKey('apiEmpty')); // Key for AnimatedSwitcher
-              } else {
-                // Logic to determine card background and text colors (remains the same)
+              } else if (controller.temperatureProcessingAttempted.value &&
+                         (controller.overallTemperatureStatusMessage.value.isNotEmpty ||
+                          controller.temperatureComparisonResult.value.isNotEmpty ||
+                          controller.temperatureDifferenceDetails.value.isNotEmpty ||
+                          controller.imageTemperature.value != null)) {
+                
                 Color? cardBackgroundColor;
                 Color comparisonResultColor = theme.textTheme.bodyLarge?.color ?? Colors.black;
                 bool isMatch = controller.temperatureComparisonResult.value.startsWith('Temperatures match!');
@@ -180,21 +176,22 @@ class ResultScreen extends GetView<ResultController> { // Changed to GetView<Res
                 }
 
                 Color overallStatusColor = theme.textTheme.titleMedium?.color ?? Colors.black;
-                bool isErrorStatus = controller.overallApiStatusMessage.value.contains('Could not find') ||
-                                     controller.overallApiStatusMessage.value.contains('API Error') ||
-                                     controller.overallApiStatusMessage.value.contains('API Call Failed');
+                // Use overallTemperatureStatusMessage for error status
+                bool isErrorStatus = controller.overallTemperatureStatusMessage.value.contains('Could not find') ||
+                                     controller.overallTemperatureStatusMessage.value.contains('API Error') ||
+                                     controller.overallTemperatureStatusMessage.value.contains('API Call Failed') ||
+                                     controller.overallTemperatureStatusMessage.value.contains('Weather API Call Failed');
                 if (isErrorStatus) {
                   overallStatusColor = Colors.orange.shade700;
                   if (cardBackgroundColor == null) {
-                      cardBackgroundColor = Colors.orange.shade50;
+                    cardBackgroundColor = Colors.orange.shade50;
                   }
                 }
 
-                bool showTempColumns = controller.imageTemperature.value != null &&
-                                       controller.apiTemperature.value != null;
+                bool showTempColumns = controller.imageTemperature.value != null && controller.apiTemperature.value != null;
 
                 cardContent = Card(
-                  key: const ValueKey('apiCardData'), // Key for AnimatedSwitcher
+                  key: const ValueKey('apiCardData'),
                   elevation: 4.0,
                   color: cardBackgroundColor,
                   shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10.0)),
@@ -209,13 +206,14 @@ class ResultScreen extends GetView<ResultController> { // Changed to GetView<Res
                           textAlign: TextAlign.center,
                         ),
                         const SizedBox(height: 12),
-                        if (controller.overallApiStatusMessage.value.isNotEmpty)
+                        if (controller.overallTemperatureStatusMessage.value.isNotEmpty)
                           Text(
-                            controller.overallApiStatusMessage.value,
+                            controller.overallTemperatureStatusMessage.value,
                             style: theme.textTheme.titleMedium?.copyWith(color: overallStatusColor),
                             textAlign: TextAlign.center,
                           ),
-                        const SizedBox(height: 16),
+                        if (controller.overallTemperatureStatusMessage.value.isNotEmpty) const SizedBox(height: 16),
+                        
                         if (showTempColumns)
                           Row(
                             mainAxisAlignment: MainAxisAlignment.spaceAround,
@@ -227,6 +225,7 @@ class ResultScreen extends GetView<ResultController> { // Changed to GetView<Res
                             ],
                           ),
                         if (showTempColumns) const SizedBox(height: 16),
+                        
                         if (controller.temperatureComparisonResult.value.isNotEmpty)
                           Text(
                             controller.temperatureComparisonResult.value,
@@ -237,6 +236,7 @@ class ResultScreen extends GetView<ResultController> { // Changed to GetView<Res
                             textAlign: TextAlign.center,
                           ),
                         if (controller.temperatureComparisonResult.value.isNotEmpty) const SizedBox(height: 8),
+                        
                         if (controller.temperatureDifferenceDetails.value.isNotEmpty)
                           Text(
                             controller.temperatureDifferenceDetails.value,
@@ -251,17 +251,120 @@ class ResultScreen extends GetView<ResultController> { // Changed to GetView<Res
                     ),
                   ),
                 );
+              } else {
+                cardContent = const SizedBox.shrink(key: ValueKey('apiCardEmptyAfterAttempt'));
               }
 
               return AnimatedSwitcher(
-                duration: const Duration(milliseconds: 500), // Adjust duration as needed
-                  transitionBuilder: (Widget child, Animation<double> animation) {
-                    return FadeTransition(
-                      opacity: animation,
-                      child: ScaleTransition(scale: animation, child: child),
-                    );
-                  },
+                duration: const Duration(milliseconds: 500),
+                transitionBuilder: (Widget child, Animation<double> animation) {
+                  return FadeTransition(
+                    opacity: animation,
+                    child: ScaleTransition(scale: animation, child: child),
+                  );
+                },
                 child: cardContent,
+              );
+            }),
+
+            const SizedBox(height: 24),
+
+            // --- Identified Products Card ---
+            Obx(() {
+              Widget productCardContent;
+
+              if (!controller.isCallingApi.value && !controller.productSearchAttempted.value) {
+                productCardContent = const SizedBox.shrink(key: ValueKey('productCardInitialHidden'));
+              } else if (controller.isCallingApi.value &&
+                         controller.temperatureProcessingAttempted.value && 
+                         !controller.productSearchAttempted.value) {
+                // Show loading if API is active, temp processing is done (or was attempted),
+                // and product search hasn't been attempted yet.
+                productCardContent = const Center(
+                  key: ValueKey('productLoadingIndicator'),
+                  child: Padding(
+                    padding: EdgeInsets.symmetric(vertical: 20.0),
+                    child: Text("Identifying products in text...", style: TextStyle(fontStyle: FontStyle.italic)),
+                  ),
+                );
+              } else if (controller.productSearchAttempted.value) {
+                if (controller.identifiedProductNames.isNotEmpty) { // Or use controller.productsWereFound.value
+                  productCardContent = Card(
+                    key: const ValueKey('productsCardData'),
+                    elevation: 4.0,
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10.0)),
+                    color: Colors.teal.shade50,
+                    child: Padding(
+                      padding: const EdgeInsets.all(16.0),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.stretch,
+                        children: [
+                          Text(
+                            'Identified Potential Products',
+                            style: theme.textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold, color: Colors.teal.shade800),
+                            textAlign: TextAlign.center,
+                          ),
+                          const SizedBox(height: 12),
+                          ListView.builder(
+                            shrinkWrap: true,
+                            physics: const NeverScrollableScrollPhysics(),
+                            itemCount: controller.identifiedProductNames.length,
+                            itemBuilder: (context, index) {
+                              final productName = controller.identifiedProductNames[index];
+                              return Padding(
+                                padding: const EdgeInsets.symmetric(vertical: 4.0),
+                                child: Text(
+                                  '- $productName',
+                                  style: theme.textTheme.bodyLarge?.copyWith(color: Colors.teal.shade700),
+                                  textAlign: TextAlign.start,
+                                ),
+                              );
+                            },
+                          ),
+                        ],
+                      ),
+                    ),
+                  );
+                } else {
+                  productCardContent = Card(
+                    key: const ValueKey('noProductsFoundMessageCard'),
+                    elevation: 4.0,
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10.0)),
+                    color: Colors.amber.shade50,
+                    child: Padding(
+                      padding: const EdgeInsets.all(16.0),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.stretch,
+                        children: [
+                          Text(
+                            'Product Identification',
+                            style: theme.textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold, color: Colors.amber.shade800),
+                            textAlign: TextAlign.center,
+                          ),
+                          const SizedBox(height: 12),
+                          Text(
+                            'No specific products identified in the text.',
+                            style: theme.textTheme.bodyLarge?.copyWith(color: Colors.amber.shade700),
+                            textAlign: TextAlign.center,
+                          ),
+                        ],
+                      ),
+                    ),
+                  );
+                }
+              } else {
+                productCardContent = const SizedBox.shrink(key: ValueKey('productCardHiddenFallback'));
+              }
+
+              return AnimatedSwitcher(
+                duration: const Duration(milliseconds: 500),
+                transitionBuilder: (Widget child, Animation<double> animation) {
+                  return FadeTransition(
+                    opacity: animation,
+                    child: SizeTransition(sizeFactor: animation, axis: Axis.vertical, child: child),
+                  );
+                },
+                child: productCardContent,
               );
             }),
           ],
