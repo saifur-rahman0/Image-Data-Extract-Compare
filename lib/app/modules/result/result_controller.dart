@@ -37,7 +37,6 @@ class ResultController extends GetxController {
       _homeController.overallApiStatusMessage.value = 'No valid text available for comparison.';
       _homeController.temperatureComparisonResult.value = '';
       _homeController.temperatureDifferenceDetails.value = 'Please go back and extract text from an image first.';
-
     }
   }
 }

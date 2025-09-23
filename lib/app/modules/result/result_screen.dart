@@ -148,110 +148,120 @@ class ResultScreen extends GetView<ResultController> { // Changed to GetView<Res
             const SizedBox(height: 24),
 
             // --- API Comparison Results Card ---
-            Obx(() { // This Obx will now observe values from ResultController
+            Obx(() {
+              Widget cardContent;
+
               if (controller.isCallingApi.value) {
-                return const Center(
+                cardContent = const Center(
+                  key: ValueKey('apiLoading'), // Key for AnimatedSwitcher
                   child: Padding(
                     padding: EdgeInsets.symmetric(vertical: 20.0),
                     child: Text("Fetching API data...", style: TextStyle(fontStyle: FontStyle.italic)),
                   ),
                 );
-              }
-              // Access all comparison data via ResultController instance
-              if (controller.overallApiStatusMessage.value.isEmpty &&
-                  controller.temperatureComparisonResult.value.isEmpty &&
-                  controller.temperatureDifferenceDetails.value.isEmpty &&
-                  controller.imageTemperature.value == null) {
-                return const SizedBox.shrink();
-              }
+              } else if (controller.overallApiStatusMessage.value.isEmpty &&
+                         controller.temperatureComparisonResult.value.isEmpty &&
+                         controller.temperatureDifferenceDetails.value.isEmpty &&
+                         controller.imageTemperature.value == null) {
+                cardContent = const SizedBox.shrink(key: ValueKey('apiEmpty')); // Key for AnimatedSwitcher
+              } else {
+                // Logic to determine card background and text colors (remains the same)
+                Color? cardBackgroundColor;
+                Color comparisonResultColor = theme.textTheme.bodyLarge?.color ?? Colors.black;
+                bool isMatch = controller.temperatureComparisonResult.value.startsWith('Temperatures match!');
+                bool isDiffer = controller.temperatureComparisonResult.value.startsWith('Temperatures differ.');
 
-              Color? cardBackgroundColor;
-              Color comparisonResultColor = theme.textTheme.bodyLarge?.color ?? Colors.black;
-              bool isMatch = controller.temperatureComparisonResult.value.startsWith('Temperatures match!');
-              bool isDiffer = controller.temperatureComparisonResult.value.startsWith('Temperatures differ.');
-
-              if (isMatch) {
-                comparisonResultColor = Colors.green.shade700;
-                cardBackgroundColor = Colors.green.shade50;
-              } else if (isDiffer) {
-                comparisonResultColor = Colors.red.shade700;
-                cardBackgroundColor = Colors.red.shade50;
-              }
-
-              Color overallStatusColor = theme.textTheme.titleMedium?.color ?? Colors.black;
-              bool isErrorStatus = controller.overallApiStatusMessage.value.contains('Could not find') ||
-                                   controller.overallApiStatusMessage.value.contains('API Error') ||
-                                   controller.overallApiStatusMessage.value.contains('API Call Failed');
-              if (isErrorStatus) {
-                overallStatusColor = Colors.orange.shade700;
-                if (cardBackgroundColor == null) {
-                    cardBackgroundColor = Colors.orange.shade50;
+                if (isMatch) {
+                  comparisonResultColor = Colors.green.shade700;
+                  cardBackgroundColor = Colors.green.shade50;
+                } else if (isDiffer) {
+                  comparisonResultColor = Colors.red.shade700;
+                  cardBackgroundColor = Colors.red.shade50;
                 }
+
+                Color overallStatusColor = theme.textTheme.titleMedium?.color ?? Colors.black;
+                bool isErrorStatus = controller.overallApiStatusMessage.value.contains('Could not find') ||
+                                     controller.overallApiStatusMessage.value.contains('API Error') ||
+                                     controller.overallApiStatusMessage.value.contains('API Call Failed');
+                if (isErrorStatus) {
+                  overallStatusColor = Colors.orange.shade700;
+                  if (cardBackgroundColor == null) {
+                      cardBackgroundColor = Colors.orange.shade50;
+                  }
+                }
+
+                bool showTempColumns = controller.imageTemperature.value != null &&
+                                       controller.apiTemperature.value != null;
+
+                cardContent = Card(
+                  key: const ValueKey('apiCardData'), // Key for AnimatedSwitcher
+                  elevation: 4.0,
+                  color: cardBackgroundColor,
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10.0)),
+                  child: Padding(
+                    padding: const EdgeInsets.all(16.0),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: [
+                        Text(
+                          'API Comparison',
+                          style: theme.textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
+                          textAlign: TextAlign.center,
+                        ),
+                        const SizedBox(height: 12),
+                        if (controller.overallApiStatusMessage.value.isNotEmpty)
+                          Text(
+                            controller.overallApiStatusMessage.value,
+                            style: theme.textTheme.titleMedium?.copyWith(color: overallStatusColor),
+                            textAlign: TextAlign.center,
+                          ),
+                        const SizedBox(height: 16),
+                        if (showTempColumns)
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceAround,
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Expanded(child: _buildTemperatureColumn('Image Temp', controller.imageTemperature.value)),
+                              const SizedBox(width: 16),
+                              Expanded(child: _buildTemperatureColumn('API / Current Temp', controller.apiTemperature.value)),
+                            ],
+                          ),
+                        if (showTempColumns) const SizedBox(height: 16),
+                        if (controller.temperatureComparisonResult.value.isNotEmpty)
+                          Text(
+                            controller.temperatureComparisonResult.value,
+                            style: theme.textTheme.bodyLarge?.copyWith(
+                              color: comparisonResultColor,
+                              fontWeight: FontWeight.bold,
+                            ),
+                            textAlign: TextAlign.center,
+                          ),
+                        if (controller.temperatureComparisonResult.value.isNotEmpty) const SizedBox(height: 8),
+                        if (controller.temperatureDifferenceDetails.value.isNotEmpty)
+                          Text(
+                            controller.temperatureDifferenceDetails.value,
+                            style: theme.textTheme.bodyMedium?.copyWith(
+                              color: (isErrorStatus && !isMatch && !isDiffer)
+                                     ? Colors.orange.shade700
+                                     : theme.textTheme.bodyMedium?.color,
+                            ),
+                            textAlign: TextAlign.center,
+                          ),
+                      ],
+                    ),
+                  ),
+                );
               }
 
-              bool showTempColumns = controller.imageTemperature.value != null &&
-                                     controller.apiTemperature.value != null;
-
-              return Card(
-                elevation: 4.0,
-                color: cardBackgroundColor,
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10.0)),
-                child: Padding(
-                  padding: const EdgeInsets.all(16.0),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.stretch,
-                    children: [
-                      Text(
-                        'API Comparison',
-                        style: theme.textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
-                        textAlign: TextAlign.center,
-                      ),
-                      const SizedBox(height: 12),
-
-                      if (controller.overallApiStatusMessage.value.isNotEmpty)
-                        Text(
-                          controller.overallApiStatusMessage.value,
-                          style: theme.textTheme.titleMedium?.copyWith(color: overallStatusColor),
-                          textAlign: TextAlign.center,
-                        ),
-                      const SizedBox(height: 16),
-
-                      if (showTempColumns)
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceAround,
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Expanded(child: _buildTemperatureColumn('Image Temp', controller.imageTemperature.value)),
-                            const SizedBox(width: 16),
-                            Expanded(child: _buildTemperatureColumn('API / Current Temp', controller.apiTemperature.value)),
-                          ],
-                        ),
-                      if (showTempColumns) const SizedBox(height: 16),
-
-                      if (controller.temperatureComparisonResult.value.isNotEmpty)
-                        Text(
-                          controller.temperatureComparisonResult.value,
-                          style: theme.textTheme.bodyLarge?.copyWith(
-                            color: comparisonResultColor,
-                            fontWeight: FontWeight.bold,
-                          ),
-                          textAlign: TextAlign.center,
-                        ),
-                      if (controller.temperatureComparisonResult.value.isNotEmpty) const SizedBox(height: 8),
-
-                      if (controller.temperatureDifferenceDetails.value.isNotEmpty)
-                        Text(
-                          controller.temperatureDifferenceDetails.value,
-                          style: theme.textTheme.bodyMedium?.copyWith(
-                            color: (isErrorStatus && !isMatch && !isDiffer)
-                                   ? Colors.orange.shade700
-                                   : theme.textTheme.bodyMedium?.color,
-                          ),
-                          textAlign: TextAlign.center,
-                        ),
-                    ],
-                  ),
-                ),
+              return AnimatedSwitcher(
+                duration: const Duration(milliseconds: 500), // Adjust duration as needed
+                  transitionBuilder: (Widget child, Animation<double> animation) {
+                    return FadeTransition(
+                      opacity: animation,
+                      child: ScaleTransition(scale: animation, child: child),
+                    );
+                  },
+                child: cardContent,
               );
             }),
           ],
