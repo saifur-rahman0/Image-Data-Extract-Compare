@@ -35,3 +35,14 @@ It allows users to:
 
 ---
 
+## Key Dependencies
+
+This project relies on the following key Flutter packages:
+
+*   **`get`**: For state management, dependency injection, and route management.
+*   **`image_picker`**: To enable users to pick images from the gallery or capture them using the camera.
+*   **`google_mlkit_text_recognition`**: Provides the on-device OCR capabilities for extracting text from images via Google's ML Kit.
+*   **`http`**: Used for making HTTP requests to external APIs like OpenWeatherMap and Hugging Face.
+*   **`cupertino_icons`**: Provides iOS-style icons (though the app primarily uses Material Design).
+
+---

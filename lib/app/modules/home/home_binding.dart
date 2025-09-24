@@ -12,19 +12,17 @@ class HomeBinding extends Bindings {
   @override
   void dependencies() {
     Get.lazyPut<WeatherService>(() => WeatherService(
-          apiKey: ApiConfig.openWeatherApiKey, // Use key from ApiConfig
+          apiKey: ApiConfig.openWeatherApiKey,
           cityId: '1185241',
         ));
 
     Get.lazyPut<ProductService>(() => ProductService(
-          apiKey: ApiConfig.huggingFaceApiKey, // Use key from ApiConfig
+          apiKey: ApiConfig.huggingFaceApiKey,
         ));
 
-    // Register the new controllers
     Get.lazyPut<TemperatureController>(() => TemperatureController());
     Get.lazyPut<ProductController>(() => ProductController());
 
-    // HomeController depends on the above controllers being registered
     Get.lazyPut<HomeController>(() => HomeController());
   }
 }

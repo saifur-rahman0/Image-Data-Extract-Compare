@@ -7,9 +7,7 @@ class ResultController extends GetxController {
   // Getter for the extracted text
   String get ocrText => _homeController.ocrTextForResultScreen.value;
 
-  // --- Pass-through getters from HomeController ---
 
-  // Overall API call status
   RxBool get isCallingApi => _homeController.isCallingApi;
 
   // Temperature related fields from HomeController (which gets them from TemperatureController)
@@ -36,8 +34,8 @@ class ResultController extends GetxController {
   // Method to initiate the API comparison using the text from HomeController
   Future<void> performApiComparison() async {
     final textToCompare = _homeController.ocrTextForResultScreen.value;
-    // HomeController's compareWithApi now handles the empty text case,
-    // including resetting fields and showing a SnackBar.
+
     await _homeController.compareWithApi(textToCompare);
+
   }
 }

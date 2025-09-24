@@ -26,7 +26,6 @@ class ProductService {
         final List<dynamic> results = jsonDecode(response.body);
         final List<String> productNames = [];
         for (var entity in results) {
-          // You might want to refine this logic based on typical product entity types
           // For dslim/bert-base-NER, 'ORG' (organization) and 'MISC' (miscellaneous)
           // might contain product names, or even 'PRODUCT' if the model supports it.
           // Let's be a bit broad for now and collect ORG, MISC, and PRODUCT if they appear.
@@ -38,16 +37,14 @@ class ProductService {
         }
         print(inputText);
         print(productNames);
-        // Remove duplicates if any
         return productNames.toSet().toList();
       } else {
-        // Consider logging the error or throwing a more specific exception
         print('Hugging Face API Error: ${response.statusCode} - ${response.body}');
-        return []; // Or throw an exception
+        return [];
       }
     } catch (e) {
       print('Error calling Hugging Face API: $e');
-      return []; // Or throw an exception
+      return [];
     }
   }
 }

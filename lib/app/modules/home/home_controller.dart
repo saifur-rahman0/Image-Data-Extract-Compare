@@ -12,7 +12,6 @@ class HomeController extends GetxController {
   final ImagePicker _picker = ImagePicker();
   final TextRecognizer _textRecognizer = TextRecognizer(script: TextRecognitionScript.latin);
 
-  // Instances of the new controllers
   final TemperatureController _temperatureController = Get.find<TemperatureController>();
   final ProductController _productController = Get.find<ProductController>();
 

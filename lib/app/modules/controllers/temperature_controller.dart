@@ -40,15 +40,13 @@ class TemperatureController extends GetxController {
     return null;
   }
 
-  // Returns true if temperature was found in image and API call sequence was completed.
-  // Returns false if no temperature was found in image to begin with.
-  Future<bool> processAndCompare(String imageText) async {
-    resetFields(); // Reset at the beginning of an attempt
-    temperatureProcessingAttempted.value = true; // Mark that an attempt is being made
 
+  Future<bool> processAndCompare(String imageText) async {
+    resetFields();
+    temperatureProcessingAttempted.value = true;
     if (imageText.isEmpty) {
       overallTemperatureStatusMessage.value = 'No text provided for temperature check.';
-      return false; // No text, so can't find temp
+      return false;
     }
 
     double? parsedImageTemp = _parseTemperatureFromText(imageText);
@@ -62,8 +60,8 @@ class TemperatureController extends GetxController {
     }
     temperatureFoundInImage.value = true;
 
-    // Notify calling controller (HomeController) to show OCR success SnackBar
-    // This method focuses on its core logic and returns status.
+
+
 
     try {
       final Map<String, dynamic> weatherData = await _weatherService.getCurrentTemperature();
@@ -92,8 +90,7 @@ class TemperatureController extends GetxController {
       overallTemperatureStatusMessage.value = 'Weather API Call Failed.';
       temperatureDifferenceDetails.value = 'Error fetching weather: ${e.toString()}';
       apiTemperature.value = null;
-      // SnackBar for API error should be handled by HomeController
     }
-    return true; // Processing completed (even if API failed, the attempt was made based on found image temp)
+    return true;
   }
 }

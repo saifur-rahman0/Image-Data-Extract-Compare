@@ -20,21 +20,20 @@ class HomeScreen extends GetView<HomeController> {
             const Text('Image Data Extractor'),
           ],
         ),
-        backgroundColor: Colors.transparent, // Make AppBar transparent
-        elevation: 0, // Remove AppBar shadow
+        backgroundColor: Colors.transparent,
+        elevation: 0,
       ),
-      extendBodyBehindAppBar: true, // Extend body behind AppBar for full screen background
-      body: Container( // Wrap with Container for background image
+      extendBodyBehindAppBar: true,
+      body: Container(
         decoration: const BoxDecoration(
           image: DecorationImage(
             image: AssetImage('assets/background/bg2.jpg'), // Your image path
             fit: BoxFit.cover, // Changed back to BoxFit.cover
           ),
         ),
-        child: Align( // Changed from Center to Align
-          alignment: Alignment.center, // Aligns child to the bottom center
+        child: Align(
+          alignment: Alignment.center,
           child: Padding(
-            // Adjusted padding to give more space at the bottom
             padding: const EdgeInsets.only(left: 16.0, right: 16.0, top: 16.0, bottom: 48.0),
             child: Obx(() {
               return Column(
@@ -58,8 +57,8 @@ class HomeScreen extends GetView<HomeController> {
                   const SizedBox(height: 20),
                   ElevatedButton(
                     style: ElevatedButton.styleFrom(
-                      backgroundColor: Colors.white.withOpacity(0.85), // Semi-transparent white
-                      foregroundColor: Colors.black87, // Text color
+                      backgroundColor: Colors.white.withOpacity(0.85),
+                      foregroundColor: Colors.black87,
                       padding: const EdgeInsets.symmetric(vertical: 15),
                       textStyle: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
                     ),
@@ -70,7 +69,7 @@ class HomeScreen extends GetView<HomeController> {
                           },
                     child: const Text('Take Photo'),
                   ),
-                  // Keep the progress indicator logic if it should also be at the bottom
+
                   if (controller.isProcessingImage.value)
                     const Padding(
                       padding: EdgeInsets.only(top: 30.0),

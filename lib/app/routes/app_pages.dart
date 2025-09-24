@@ -11,7 +11,7 @@ import '../modules/result/result_controller.dart';
 import '../modules/result/result_binding.dart';
 
 class AppPages {
-  static const INITIAL = Routes.HOME; // The initial route is now Home
+  static const INITIAL = Routes.HOME;
 
   static final routes = [
     GetPage(
@@ -21,8 +21,8 @@ class AppPages {
     ),
     GetPage(
       name: Routes.RESULT,
-      page: () => const ResultScreen(), // ResultScreen will no longer take constructor args
-      binding: ResultBinding(),       // We'll create ResultBinding soon
+      page: () => const ResultScreen(),
+      binding: ResultBinding(),
     ),
   ];
 }

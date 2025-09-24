@@ -3,17 +3,14 @@ import 'package:http/http.dart' as http;
 
 class WeatherService {
   final String _apiKey;
-  final String _cityId; // Added cityId field
+  final String _cityId;
   final String _baseUrl = 'http://api.openweathermap.org/data/2.5/weather';
 
-  // Constructor now requires apiKey and cityId
   WeatherService({required String apiKey, required String cityId})
       : _apiKey = apiKey,
         _cityId = cityId;
 
-  // getCurrentTemperature no longer needs cityId as a parameter
   Future<Map<String, dynamic>> getCurrentTemperature() async {
-    // Uses the _cityId stored in the instance
     final String apiUrl = '$_baseUrl?id=$_cityId&appid=$_apiKey&units=metric';
 
     try {
@@ -43,7 +40,6 @@ class WeatherService {
             errorMsg += ' Message: ${errorData['message']}';
           }
         } catch (_) {
-          // Ignore if error response is not JSON
         }
         throw Exception(errorMsg);
       }
